@@ -22,18 +22,9 @@ namespace stonefail
             InitializeComponent();
             SetupGame();
 
-            // Установка иконки формы
-            try
-            {
-                this.Icon = new Icon("Recourses/stone.ico");
-            }
-            catch (Exception ex)
-            {
-                MessageBox.Show("Ошибка загрузки иконки: " + ex.Message);
-            }
-
             this.KeyPreview = true;
             this.KeyDown += Form1_KeyDown;
+            this.MouseMove += Form1_MouseMove; // Подписка на событие движения мыши
         }
 
         private void SetupGame()
@@ -44,10 +35,11 @@ namespace stonefail
             stoneSpeed = 2;
             timeAccumulator = 0;
 
-            // Создание персонажа-игрока
+            // Создаём персонажа-игрока.
             player = new PictureBox();
             player.Size = new Size(40, 40);
             player.BackColor = Color.Black;
+            // Располагаем игрока по центру нижней части контейнера Game.
             player.Location = new Point(Game.Width / 2 - player.Width / 2, Game.Height - player.Height - 10);
             Game.Controls.Add(player);
 
@@ -58,14 +50,13 @@ namespace stonefail
 
         private void Timer1_Tick(object sender, EventArgs e)
         {
-            if (gameOver) return;
+            if (gameOver)
+                return;
 
             stoneSpeed += 0.001;
 
             if (random.NextDouble() < 0.05)
-            {
                 CreateNewStone();
-            }
 
             for (int i = stoneList.Count - 1; i >= 0; i--)
             {
@@ -99,7 +90,7 @@ namespace stonefail
             gameOver = true;
             timer1.Stop();
 
-            // Воспроизведение звука окончания игры
+            // Воспроизведение звука окончания игры.
             try
             {
                 SoundPlayer soundPlayer = new SoundPlayer("Recourses/wav1.wav");
@@ -115,7 +106,8 @@ namespace stonefail
 
         private void Form1_KeyDown(object sender, KeyEventArgs e)
         {
-            if (gameOver) return;
+            if (gameOver)
+                return;
 
             if (e.KeyCode == Keys.W && player.Top - playerSpeed >= 0)
                 player.Top -= playerSpeed;
@@ -125,6 +117,32 @@ namespace stonefail
                 player.Left -= playerSpeed;
             else if (e.KeyCode == Keys.D && player.Right + playerSpeed <= Game.Width)
                 player.Left += playerSpeed;
+        }
+
+        // Обработчик движения мыши использует абсолютные координаты внутри формы.
+        private void Form1_MouseMove(object sender, MouseEventArgs e)
+        {
+            if (gameOver)
+                return;
+
+            // Получаем позицию курсора относительно формы
+            Point mousePos = this.PointToClient(Cursor.Position);
+
+            int newX = mousePos.X - player.Width / 2;
+            int newY = mousePos.Y - player.Height / 2;
+
+            // Ограничиваем перемещение, чтобы игрок не выходил за границы контейнера Game.
+            if (newX < 0)
+                newX = 0;
+            else if (newX > Game.Width - player.Width)
+                newX = Game.Width - player.Width;
+
+            if (newY < 0)
+                newY = 0;
+            else if (newY > Game.Height - player.Height)
+                newY = Game.Height - player.Height;
+
+            player.Location = new Point(newX, newY);
         }
 
         private void CreateNewStone()
@@ -146,10 +164,41 @@ namespace stonefail
             stone.Image = stoneImage;
             stone.SizeMode = PictureBoxSizeMode.StretchImage;
             stone.BackColor = Color.Transparent;
-            int xPosition = random.Next(0, Game.Width - stone.Width);
+
+            // Определяем позицию, чтобы камень не пересекался с уже созданными камнями.
+            int maxAttempts = 20;
+            int attempts = 0;
+            int xPosition;
+            Rectangle newStoneRect;
+
+            do
+            {
+                xPosition = random.Next(0, Game.Width - stone.Width);
+                newStoneRect = new Rectangle(new Point(xPosition, -stone.Height), stone.Size);
+                attempts++;
+            }
+            while (attempts < maxAttempts && IsIntersectingWithExistingStones(newStoneRect));
+
+            if (attempts >= maxAttempts && IsIntersectingWithExistingStones(newStoneRect))
+            {
+                // Если после нескольких попыток не удалось получить свободную позицию, не создаём камень.
+                return;
+            }
+
             stone.Location = new Point(xPosition, -stone.Height);
             Game.Controls.Add(stone);
             stoneList.Add(stone);
+        }
+
+        // Метод проверяет, пересекается ли заданный прямоугольник с уже созданными камнями.
+        private bool IsIntersectingWithExistingStones(Rectangle newRect)
+        {
+            foreach (PictureBox existingStone in stoneList)
+            {
+                if (newRect.IntersectsWith(existingStone.Bounds))
+                    return true;
+            }
+            return false;
         }
     }
 }

@@ -29,6 +29,7 @@
         private void InitializeComponent()
         {
             components = new System.ComponentModel.Container();
+            System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(Form1));
             Game = new PictureBox();
             Timegame = new Label();
             timer1 = new System.Windows.Forms.Timer(components);
@@ -68,8 +69,10 @@
             ClientSize = new Size(1224, 671);
             Controls.Add(Timegame);
             Controls.Add(Game);
+            Icon = (Icon)resources.GetObject("$this.Icon");
             Name = "Form1";
-            Text = "Form1";
+            Text = "Game";
+            MouseMove += Form1_MouseMove;
             ((System.ComponentModel.ISupportInitialize)Game).EndInit();
             ResumeLayout(false);
             PerformLayout();
