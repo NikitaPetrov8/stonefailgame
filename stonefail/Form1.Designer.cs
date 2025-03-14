@@ -49,7 +49,7 @@
             // 
             Timegame.AutoSize = true;
             Timegame.Font = new Font("Tahoma", 36F, FontStyle.Bold | FontStyle.Italic, GraphicsUnit.Point, 0);
-            Timegame.Location = new Point(154, 554);
+            Timegame.Location = new Point(978, 0);
             Timegame.Name = "Timegame";
             Timegame.Size = new Size(244, 58);
             Timegame.TabIndex = 1;

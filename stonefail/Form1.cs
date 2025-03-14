@@ -24,7 +24,9 @@ namespace stonefail
 
             this.KeyPreview = true;
             this.KeyDown += Form1_KeyDown;
-            this.MouseMove += Form1_MouseMove; // ѕодписка на событие движени€ мыши
+            // ѕодписываемс€ на событие MouseMove и дл€ формы, и дл€ игрового контейнера Game.
+            this.MouseMove += Form1_MouseMove;
+            Game.MouseMove += Form1_MouseMove;
         }
 
         private void SetupGame()
@@ -35,7 +37,7 @@ namespace stonefail
             stoneSpeed = 2;
             timeAccumulator = 0;
 
-            // —оздаЄм персонажа-игрока.
+            // —оздаем персонажа-игрока и помещаем его внутрь контейнера Game.
             player = new PictureBox();
             player.Size = new Size(40, 40);
             player.BackColor = Color.Black;
@@ -90,7 +92,6 @@ namespace stonefail
             gameOver = true;
             timer1.Stop();
 
-            // ¬оспроизведение звука окончани€ игры.
             try
             {
                 SoundPlayer soundPlayer = new SoundPlayer("Recourses/wav1.wav");
@@ -119,19 +120,33 @@ namespace stonefail
                 player.Left += playerSpeed;
         }
 
-        // ќбработчик движени€ мыши использует абсолютные координаты внутри формы.
+        // ќбработчик движени€ мыши.
+  
         private void Form1_MouseMove(object sender, MouseEventArgs e)
         {
             if (gameOver)
                 return;
 
-            // ѕолучаем позицию курсора относительно формы
-            Point mousePos = this.PointToClient(Cursor.Position);
+            int mouseX, mouseY;
+            if (sender == Game)
+            {
+                // e.Location уже €вл€етс€ координатами относительно Game.
+                mouseX = e.X;
+                mouseY = e.Y;
+            }
+            else
+            {
+                // ѕолучаем позицию курсора относительно формы и приводим к координатам внутри Game.
+                Point formMousePos = this.PointToClient(Cursor.Position);
+                mouseX = formMousePos.X - Game.Left;
+                mouseY = formMousePos.Y - Game.Top;
+            }
 
-            int newX = mousePos.X - player.Width / 2;
-            int newY = mousePos.Y - player.Height / 2;
+            // ¬ычисл€ем новое положение игрока так, чтобы его центр совпадал с позицией курсора.
+            int newX = mouseX - player.Width / 2;
+            int newY = mouseY - player.Height / 2;
 
-            // ќграничиваем перемещение, чтобы игрок не выходил за границы контейнера Game.
+            // ќграничиваем координаты, чтобы игрок не выходил за пределы Game.
             if (newX < 0)
                 newX = 0;
             else if (newX > Game.Width - player.Width)
@@ -165,12 +180,10 @@ namespace stonefail
             stone.SizeMode = PictureBoxSizeMode.StretchImage;
             stone.BackColor = Color.Transparent;
 
-            // ќпредел€ем позицию, чтобы камень не пересекалс€ с уже созданными камн€ми.
-            int maxAttempts = 20;
             int attempts = 0;
+            int maxAttempts = 20;
             int xPosition;
             Rectangle newStoneRect;
-
             do
             {
                 xPosition = random.Next(0, Game.Width - stone.Width);
@@ -181,7 +194,6 @@ namespace stonefail
 
             if (attempts >= maxAttempts && IsIntersectingWithExistingStones(newStoneRect))
             {
-                // ≈сли после нескольких попыток не удалось получить свободную позицию, не создаЄм камень.
                 return;
             }
 
@@ -190,7 +202,6 @@ namespace stonefail
             stoneList.Add(stone);
         }
 
-        // ћетод провер€ет, пересекаетс€ ли заданный пр€моугольник с уже созданными камн€ми.
         private bool IsIntersectingWithExistingStones(Rectangle newRect)
         {
             foreach (PictureBox existingStone in stoneList)
